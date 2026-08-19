@@ -1,0 +1,14 @@
+node_modules/
+.DS_Store
+.env
+.env.local
+.vercel/
+tmp/
+
+# Vendored library copies are for offline tests only — the app loads them from a
+# pinned CDN with integrity hashes. `npm run vendor` recreates them.
+public/vendor/
+
+# Baked layer files ARE committed: Vercel deploys straight from the repo, so a
+# layer that is not in git is not on the site. Anything over ~50 MB belongs in
+# Supabase Storage or a GitHub release asset instead.
