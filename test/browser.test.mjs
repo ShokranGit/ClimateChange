@@ -293,11 +293,20 @@ test('the north arrow turns with the map and resets it', async () => {
 test('switching the base map keeps the layers that were switched on', async () => {
   // setStyle throws away every source and layer. If the picker does not put
   // them back, the basemap works and all the data silently vanishes.
+  // Two layers of different geometries: the manager inserts polygons *before*
+  // the first point layer, so restoring them after setStyle used to reference a
+  // layer that had not been put back yet.
   await page.evaluate(async () => {
+    for (const id of [...window.__lm.on.keys()]) window.__lm.remove(id);
+    // Order matters: the polygon goes on first, so the manager inserts it
+    // *before* the point layer that follows.
     await window.__lm.add(window.__registry.byId.get('evac-zones'));
+    await window.__lm.add(window.__registry.byId.get('boat-launches'));
+    window.__lm.errors.length = 0;
   });
   const before = await page.evaluate(() => [...window.__lm.on.keys()]);
   assert.ok(before.includes('evac-zones'), 'setup: the layer should be on');
+  assert.ok(before.includes('boat-launches'), 'setup: the point layer should be on');
 
   await page.evaluate(async () => {
     const opt = [...document.querySelectorAll('.basemap-opt')].find(o => /Muted/.test(o.textContent));
@@ -307,11 +316,14 @@ test('switching the base map keeps the layers that were switched on', async () =
 
   const after = await page.evaluate(() => ({
     on: [...window.__lm.on.keys()],
-    drawn: window.__map.getStyle().layers.filter(l => l.id.startsWith('evac-zones:')).map(l => l.id)
+    drawn: window.__map.getStyle().layers.filter(l => /^(evac-zones|boat-launches):/.test(l.id)).map(l => l.id),
+    errors: window.__lm.errors.slice()
   }));
   assert.deepEqual(after.on, before, 'the same layers should still be on after the switch');
-  assert.deepEqual(after.drawn.sort(), ['evac-zones:fill', 'evac-zones:line'],
+  assert.deepEqual(after.drawn.sort(),
+    ['boat-launches:circle', 'evac-zones:fill', 'evac-zones:line'],
     'and they should still be in the style');
+  assert.deepEqual(after.errors, [], `maplibre errors on restore: ${after.errors.join(' | ')}`);
 });
 
 test('no page errors and no silent MapLibre layer failures', async () => {

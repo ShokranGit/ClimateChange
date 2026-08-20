@@ -137,7 +137,13 @@ export class LayerManager {
     const order = { polygon: 0, line: 1, point: 2 };
     const mine = order[entry.geom] ?? 2;
     for (const rec of this.on.values()) {
-      if ((order[rec.entry.geom] ?? 2) > mine) return rec.mapLayerIds[0];
+      if ((order[rec.entry.geom] ?? 2) <= mine) continue;
+      // A switched-on layer is not necessarily *drawn*: setStyle empties the
+      // map, and the base map picker puts the layers back one at a time. Insert
+      // before a reference that is actually on the map, or MapLibre throws and
+      // the layer silently fails to draw.
+      const ref = rec.mapLayerIds.find(l => this.map.getLayer(l));
+      if (ref) return ref;
     }
     return undefined;
   }
