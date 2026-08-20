@@ -35,10 +35,20 @@ html,body{margin:0;height:100%;font:15px/1.45 -apple-system,BlinkMacSystemFont,"
   border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:13.5px}
 #layer-search::placeholder{color:#6d8494}
 
+#panel-chips{margin-bottom:12px}
+.chip-label{margin:0 0 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.11em;color:#6d8494}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;
+  color:var(--ink-dim);font-size:12px;cursor:pointer;line-height:1.5}
+.chip:hover{border-color:var(--accent);color:var(--ink)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#04222c;font-weight:600}
+
 .group{margin-bottom:16px}
 .group > h2{margin:0 0 2px;font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-dim);
   display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:6px 0}
-.group > h2 .chev{transition:transform .15s}
+.group > h2 .chev{transition:transform .15s;margin-left:6px}
+.group > h2{gap:8px}
+.grouptally{margin-left:auto;font-variant-numeric:tabular-nums;color:#6d8494;letter-spacing:0}
 .group.collapsed .chev{transform:rotate(-90deg)}
 .group.collapsed .group-body{display:none}
 .group > p.blurb{margin:0 0 8px;font-size:12px;color:#7f97a5}
@@ -50,10 +60,19 @@ html,body{margin:0;height:100%;font:15px/1.45 -apple-system,BlinkMacSystemFont,"
 .layer .name{display:block;font-size:13.5px}
 .layer .meta{display:block;font-size:11.5px;color:var(--ink-dim);margin-top:2px}
 .layer .swatch{width:11px;height:11px;border-radius:3px;flex:none;margin-top:4px;border:1px solid rgba(255,255,255,.25)}
+.layer .swatch.dim{opacity:.3}
+.layer.off{cursor:default;padding-left:29px;position:relative}
+.layer.off:hover{background:transparent}
+.layer.off .name{color:#8ea6b4}
+.layer-body{min-width:0;flex:1}
+.reason{display:block;font-size:11.5px;color:#7f97a5;margin-top:3px;font-style:italic;line-height:1.4}
 .badge{display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:1px}
 .badge.gated{background:#5a2d22;color:#ffbfa8}
 .badge.stale{background:#3d3520;color:#e6d08a}
 .badge.new{background:#1d4038;color:#8fe0cf}
+.badge.ok{background:#1d4038;color:#8fe0cf}
+.badge.wait{background:#2b3440;color:#a9bccb}
+.badge.absent{background:#3a2230;color:#e6a8c4}
 
 .field{margin:0 0 14px}
 .field label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:5px;letter-spacing:.03em}
@@ -95,4 +114,91 @@ html,body{margin:0;height:100%;font:15px/1.45 -apple-system,BlinkMacSystemFont,"
   .panel{width:100%;max-width:100%}
   .inspect{left:12px;right:12px;width:auto;top:auto;bottom:12px;max-height:45vh}
   .legend{display:none}
+}
+
+/* ── base map picker ──────────────────────────────────────────────────────
+   Sits above every other control in the panel, because it is the one choice
+   that changes what all the others are read against. */
+#basemap{margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.basemap-head{display:flex;align-items:center;gap:8px;width:100%;padding:4px 0;
+  background:none;border:none;color:var(--ink);cursor:pointer;text-align:left}
+.basemap-head .chip-label{margin:0}
+.basemap-value{margin-left:auto;font-size:13px;color:var(--accent)}
+.basemap-head .chev{transition:transform .15s;color:var(--ink-dim);transform:rotate(-90deg)}
+.basemap-head.open .chev{transform:none}
+.basemap-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.basemap-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;
+  border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;text-align:left;width:100%}
+.basemap-opt:hover{border-color:var(--accent)}
+.basemap-opt.on{border-color:var(--accent);background:var(--panel-2)}
+.basemap-opt[disabled]{opacity:.5;cursor:progress}
+.basemap-swatch{width:26px;height:26px;border-radius:6px;flex:none;border:1px solid rgba(255,255,255,.18)}
+.basemap-opt .name{display:block;font-size:13.5px}
+.basemap-opt .blurb{display:block;font-size:11.5px;color:var(--ink-dim);margin-top:2px}
+.basemap-opt .tick{margin-left:auto;color:var(--accent)}
+
+/* The panel overlays the map, so the edge controls step aside while it is open
+   rather than hiding underneath it. */
+#panel:not([hidden]) ~ .coordbar{left:392px}
+#panel:not([hidden]) ~ .north{left:392px}
+#panel:not([hidden]) ~ .scale{left:440px}
+
+/* ── coordinate bar ───────────────────────────────────────────────────────*/
+.coordbar{position:absolute;left:12px;bottom:56px;z-index:5;display:flex;flex-wrap:wrap;
+  align-items:stretch;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+  overflow:hidden;font-size:12.5px;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.coordbar.pinned{border-color:var(--accent)}
+.cb-seg{display:flex;align-items:center;gap:6px;padding:6px 11px;background:none;border:none;
+  border-right:1px solid var(--line);color:var(--ink);font-size:12.5px;font-family:inherit}
+button.cb-seg{cursor:pointer}
+button.cb-seg:hover{background:var(--panel-2)}
+.cb-seg:last-child{border-right:none}
+.cb-seg .k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
+.cb-seg .t{font-size:12.5px;color:var(--ink);letter-spacing:0;text-transform:none}
+.cb-seg .v{font-variant-numeric:tabular-nums;color:var(--ink)}
+.cb-icon{background:none;border:none;color:var(--ink-dim);cursor:pointer;font-size:13px;padding:0 2px}
+.cb-icon:hover{color:var(--accent)}
+.cb-seg.on{color:var(--accent)}
+.cb-seg.geo .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-dim)}
+.cb-seg.geo.on .dot{background:var(--ok)}
+.cb-seg.geo.blocked{color:var(--warn)}
+.cb-seg.geo.blocked .dot{background:var(--warn)}
+
+/* ── north arrow ──────────────────────────────────────────────────────────*/
+.north{position:absolute;left:12px;bottom:12px;z-index:5}
+.north-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink-dim);cursor:pointer;position:relative;
+  display:flex;align-items:flex-start;justify-content:center;padding-top:2px;
+  box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.north-btn.turned{border-color:var(--accent)}
+.north-btn .n{font-size:9px;letter-spacing:.08em}
+.north-btn .needle{position:absolute;left:50%;top:50%;width:3px;height:22px;margin:-11px 0 0 -1.5px;
+  transition:transform .12s linear;
+  background:linear-gradient(to bottom,var(--warn) 0 50%,#5c7386 50% 100%);
+  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+
+/* ── scale bar ────────────────────────────────────────────────────────────*/
+.scale{position:absolute;left:60px;bottom:12px;z-index:5;display:flex;align-items:center;gap:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:5px 8px;
+  box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.scale-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-dim);
+  font-variant-numeric:tabular-nums;margin-bottom:2px}
+.scale-body{min-width:96px}
+.scale-bar{display:block;height:7px;border:1px solid var(--ink-dim);border-radius:1px;
+  background:repeating-linear-gradient(90deg,var(--ink) 0 12px,transparent 12px 24px)}
+.units{display:flex;gap:2px}
+.unit{padding:3px 7px;border-radius:5px;border:1px solid transparent;background:none;
+  color:var(--ink-dim);font-size:11px;cursor:pointer;font-family:inherit}
+.unit.on{background:var(--accent);color:#04222c;font-weight:600}
+
+@media (max-width:640px){
+  .coordbar{left:8px;right:8px;bottom:96px;font-size:11.5px}
+  .scale{left:58px;bottom:10px}
+  .north{left:8px;bottom:10px}
+  /* Full-width panel on a phone: the controls stay where they are and the
+     panel simply covers them until it is closed. */
+  #panel:not([hidden]) ~ .coordbar,
+  #panel:not([hidden]) ~ .north,
+  #panel:not([hidden]) ~ .scale{left:8px}
+  #panel:not([hidden]) ~ .scale{left:56px}
 }

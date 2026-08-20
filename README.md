@@ -17,22 +17,40 @@ Centred on New York City, framed over New York and New Jersey.
 
 ## How layers work
 
-`scripts/registry.src.json` is the single source of truth. Each entry carries the
+`registry/*.py` is where the catalogue is written; `python3 registry/build.py`
+assembles and validates it into `scripts/registry.src.json`. Keeping it as
+Python rather than hand-edited JSON means the 106 entries stay diffable, the
+shared endpoint constants are written once, and a typo in a group id fails the
+build instead of silently producing an empty panel.
+
+`scripts/registry.src.json` is then the single source of truth for the app. Each entry carries the
 public metadata the browser needs *and* a `source` block describing where the data
 comes from. `scripts/gen-index.mjs` turns it into `public/layers/index.json`, in
 one of two modes:
 
-| mode | what it emits | when |
-|---|---|---|
-| `--remote` (default) | a direct query URL against the publisher's REST endpoint; the browser fetches GeoJSON live | small layers, always current, works on the first deploy |
-| `--baked` | `/layers/<id>.geojson` or `.pmtiles` if that file is on disk | large layers, offline use, immunity to a publisher moving a URL mid-semester |
+Every entry reaches the browser. What differs is its `status`:
+
+| status | meaning |
+|---|---|
+| `live` | the browser fetches GeoJSON straight from the publisher's REST endpoint |
+| `baked` | `/layers/<id>.geojson` or `.pmtiles` exists locally, so use that |
+| `pending` | real and described, but the source needs a build step — a zip, a geodatabase, a raster set, a tabular API |
+| `gated` | NYSDEC forbids secondary distribution: named, never served |
+| `absent` | searched for and confirmed missing from the public record |
+
+The last two are listed on purpose. A catalogue that hides what it cannot draw
+misrepresents the public record, and §6 of the survey — what is confirmed
+missing — is the best teaching material in it. `test/registry.test.mjs` asserts
+the absences are present, that no gated or absent entry ever carries a URL, and
+that the inventory has not been quietly trimmed below the survey's size.
 
 ```
+python3 registry/build.py   # rebuild scripts/registry.src.json from registry/*.py
 npm run index          # remote mode
 npm run bake           # fetch everything into public/layers/ (needs network)
 npm run index:baked    # switch the registry over to whatever got baked
 npm run serve          # http://127.0.0.1:8099, with working Range support
-npm test               # 34 assertions
+npm test               # 42 assertions
 ```
 
 Baking runs in **GitHub Actions** (`.github/workflows/bake-layers.yml`), weekly and

@@ -1,6 +1,6 @@
 // Bump VERSION on EVERY deploy. A stale shell against a new registry is the
 // single most confusing failure mode this app has.
-const VERSION = 'cc-2026-08-20-003';
+const VERSION = 'cc-2026-08-20-005';
 
 // The three libraries are pinned CDN copies with subresource-integrity hashes
 // computed from the exact npm tarballs, so the browser refuses a substituted
@@ -18,6 +18,7 @@ const SHELL = [
   '/js/main.js', '/js/config.js', '/js/util.js', '/js/paint.js',
   '/js/layers.js', '/js/registry.js', '/js/panel.js', '/js/scenarios.js',
   '/js/inspect.js', '/js/supa.js', '/js/env.js',
+  '/js/basemap.js', '/js/controls.js',
   '/layers/index.json'
 ];
 

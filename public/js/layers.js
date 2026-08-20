@@ -22,6 +22,11 @@ export class LayerManager {
 
   async add(entry) {
     if (this.on.has(entry.id)) return;
+    // A pending, gated or absent entry is in the registry to be read, not drawn.
+    if (entry.drawable === false || (entry.status && entry.status !== 'live' && entry.status !== 'baked')) {
+      console.warn(`${entry.id} is ${entry.status} — not drawable`);
+      return;
+    }
     const map = this.map;
     const sourceId = `src:${entry.id}`;
 
@@ -117,6 +122,11 @@ export class LayerManager {
     if (!rec) return;
     for (const l of rec.mapLayerIds) {
       if (rec.entry.probe && l.endsWith(':fill')) continue;
+      // A base-map switch tears the style down and rebuilds it; anything that
+      // fires in that window would otherwise filter a layer that is briefly
+      // not there, and MapLibre reports it on the error event rather than
+      // throwing — so it would look like a working app with a dead chooser.
+      if (!this.map.getLayer(l)) continue;
       this.map.setFilter(l, filter);
     }
   }

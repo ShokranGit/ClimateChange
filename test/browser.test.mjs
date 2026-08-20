@@ -67,6 +67,11 @@ before(async () => {
       body: fs.readFileSync(file, 'utf8') });
   });
 
+  // The elevation readout asks the USGS Elevation Point Query Service. Answer
+  // it here so the assertion below is about our arithmetic, not the network.
+  await page.route(/epqs\.nationalmap\.gov/, r =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ value: 12.5 }) }));
+
   await page.route(/basemaps\.cartocdn\.com/, r =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(BLANK_STYLE) }));
   await page.route(/services\d*\.arcgis\.com|encdirect\.noaa\.gov|data\.cityofnewyork\.us|data\.ny\.gov/, r =>
@@ -173,9 +178,146 @@ test('the layer panel builds even when the map style never loads', async () => {
   await p2.close();
 });
 
+test('the whole survey is listed, not only the drawable part', async () => {
+  const n = await page.evaluate(() => ({
+    registered: window.__registry.layers.length,
+    rows: document.querySelectorAll('#layer-groups .layer').length,
+    drawable: window.__registry.drawable.length,
+    absent: window.__registry.layers.filter(l => l.status === 'absent').length,
+    gated: window.__registry.layers.filter(l => l.status === 'gated').length
+  }));
+  assert.ok(n.registered >= 90, `only ${n.registered} entries`);
+  assert.equal(n.rows, n.registered, 'every entry should have a row');
+  assert.ok(n.absent >= 8, 'the confirmed absences must be visible');
+  assert.ok(n.gated >= 6, 'the DEC layers must be named even though they are held back');
+});
+
+test('an entry that cannot be drawn offers no checkbox', async () => {
+  const bad = await page.evaluate(() =>
+    [...document.querySelectorAll('#layer-groups .layer.off input[type=checkbox]')].length);
+  assert.equal(bad, 0, 'pending, gated and absent rows must not be toggleable');
+  const off = await page.locator('#layer-groups .layer.off').count();
+  assert.ok(off >= 40, `only ${off} non-drawable rows rendered`);
+});
+
+test('the scope and status chips filter the list', async () => {
+  const click = t => page.evaluate(txt => {
+    [...document.querySelectorAll('.chip')].find(c => c.textContent === txt)?.click();
+  }, t);
+  const rows = () => page.locator('#layer-groups .layer').count();
+  const all = await rows();
+  await click('Ready now'); await page.waitForTimeout(150);
+  const ready = await rows();
+  assert.ok(ready > 0 && ready < all, `"Ready now" showed ${ready} of ${all}`);
+  await click('Absences'); await page.waitForTimeout(150);
+  assert.ok(await rows() >= 8, 'the absences filter should show the absences');
+  await click('Everything'); await page.waitForTimeout(150);
+  assert.equal(await rows(), all, 'clearing the filter should restore every row');
+});
+
+test('layers.add refuses an entry that is not drawable', async () => {
+  const before = await page.evaluate(() => window.__map.getStyle().layers.length);
+  await page.evaluate(async () => {
+    const L = window.__registry.layers.find(l => l.status === 'absent');
+    await window.__lm.add(L);
+  });
+  const after = await page.evaluate(() => window.__map.getStyle().layers.length);
+  assert.equal(after, before, 'an absent entry must never reach the style');
+});
+
+test('the coordinate bar reads out, converts and pins', async () => {
+  const read = () => page.evaluate(() => ({
+    lat: document.querySelectorAll('#coordbar .v')[0].textContent,
+    lon: document.querySelectorAll('#coordbar .v')[1].textContent,
+    alt: document.querySelectorAll('#coordbar .v')[2].textContent
+  }));
+  await page.waitForFunction(() =>
+    document.querySelectorAll('#coordbar .v')[2].textContent !== '—', null, { timeout: 8000 });
+  const dd = await read();
+  assert.match(dd.lat, /^\d+\.\d{5}$/, `latitude read "${dd.lat}"`);
+  assert.equal(dd.alt, '12.5 m', 'elevation should arrive in metres from EPQS');
+
+  // Feet and metres must describe the same height, not two different numbers.
+  await page.evaluate(() => [...document.querySelectorAll('.unit')].find(u => u.textContent === 'ft').click());
+  await page.waitForTimeout(120);
+  const ft = (await read()).alt;
+  assert.match(ft, /ft$/, `expected feet, got "${ft}"`);
+  assert.ok(Math.abs(parseFloat(ft) - 12.5 / 0.3048) < 0.1, `${ft} is not 12.5 m`);
+
+  await page.evaluate(() => [...document.querySelectorAll('#coordbar button')]
+    .find(b => /D° M′ S″|LAT, LON/.test(b.textContent))?.click());
+  await page.waitForTimeout(120);
+  assert.match((await read()).lat, /°.*[NS]$/, 'the format toggle should give degrees–minutes–seconds');
+});
+
+test('the scale bar rounds to a number a person can reckon with', async () => {
+  const label = () => page.locator('#scale .scale-end.r').textContent();
+  const px = () => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.scale-bar')).width));
+  const nice = t => {
+    const n = parseFloat(t.replace(/,/g, ''));
+    const lead = Number(String(n).replace('.', '').replace(/0+$/, '')[0] || '0');
+    return [1, 2, 5].includes(lead) && Number.isInteger(n);
+  };
+  const first = await label();
+  assert.match(first, /^[\d,]+ (m|km|ft|mi)$/, `scale read "${first}"`);
+  assert.ok(nice(first), `metric scale "${first}" is not a whole 1, 2 or 5 step`);
+
+  // The imperial ladder is the one that goes wrong: round feet, divide by
+  // 5,280, and you get 3.8 mi.
+  await page.evaluate(() => [...document.querySelectorAll('.unit')].find(u => u.textContent === 'ft').click());
+  await page.waitForTimeout(150);
+  const imp = await label();
+  assert.match(imp, /^[\d,]+ (ft|mi)$/, `imperial scale read "${imp}"`);
+  assert.ok(nice(imp), `imperial scale "${imp}" is not a whole 1, 2 or 5 step`);
+  await page.evaluate(() => [...document.querySelectorAll('.unit')].find(u => u.textContent === 'm').click());
+  await page.waitForTimeout(150);
+
+  const w = await px();
+  assert.ok(w > 20 && w < 200, `scale bar is ${w}px wide`);
+});
+
+test('the north arrow turns with the map and resets it', async () => {
+  await page.evaluate(() => window.__map.setBearing(45));
+  await page.waitForTimeout(150);
+  const turned = await page.evaluate(() => ({
+    cls: document.querySelector('.north-btn').className,
+    t: document.querySelector('.north-btn .needle').style.transform
+  }));
+  assert.match(turned.t, /rotate\(-45deg\)/, 'the needle should hold north while the map turns');
+  assert.match(turned.cls, /turned/);
+  await page.evaluate(() => document.querySelector('.north-btn').click());
+  await page.waitForTimeout(600);
+  assert.equal(Math.round(await page.evaluate(() => window.__map.getBearing())), 0);
+});
+
+test('switching the base map keeps the layers that were switched on', async () => {
+  // setStyle throws away every source and layer. If the picker does not put
+  // them back, the basemap works and all the data silently vanishes.
+  await page.evaluate(async () => {
+    await window.__lm.add(window.__registry.byId.get('evac-zones'));
+  });
+  const before = await page.evaluate(() => [...window.__lm.on.keys()]);
+  assert.ok(before.includes('evac-zones'), 'setup: the layer should be on');
+
+  await page.evaluate(async () => {
+    const opt = [...document.querySelectorAll('.basemap-opt')].find(o => /Muted/.test(o.textContent));
+    opt.click();
+  });
+  await page.waitForTimeout(2500);
+
+  const after = await page.evaluate(() => ({
+    on: [...window.__lm.on.keys()],
+    drawn: window.__map.getStyle().layers.filter(l => l.id.startsWith('evac-zones:')).map(l => l.id)
+  }));
+  assert.deepEqual(after.on, before, 'the same layers should still be on after the switch');
+  assert.deepEqual(after.drawn.sort(), ['evac-zones:fill', 'evac-zones:line'],
+    'and they should still be in the style');
+});
+
 test('no page errors and no silent MapLibre layer failures', async () => {
   const mapErrors = await page.evaluate(() => window.__lm.errors);
-  const real = errors.filter(e => !/favicon|manifest|Failed to load resource.*404/i.test(e));
+  const real = errors.filter(e => !/favicon|manifest|Failed to load resource.*404/i.test(e))
+    .filter(e => !/is (pending|gated|absent) — not drawable/.test(e));
   assert.deepEqual(real, [], `page errors: ${real.join(' | ')}`);
   assert.deepEqual(mapErrors, [], `maplibre errors: ${mapErrors.join(' | ')}`);
 });

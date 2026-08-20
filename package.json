@@ -12,7 +12,8 @@
     "test": "node --test \"test/*.test.mjs\"",
     "vercel-build": "node scripts/write-env.mjs && node scripts/gen-index.mjs --baked",
     "vendor": "node scripts/fetch-vendor.mjs",
-    "pretest": "node scripts/fetch-vendor.mjs"
+    "pretest": "node scripts/fetch-vendor.mjs",
+    "registry": "python3 registry/build.py && node scripts/gen-index.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.1"

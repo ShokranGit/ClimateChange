@@ -6,6 +6,8 @@ import { buildPanel, wireChrome } from './panel.js';
 import { buildScenarios } from './scenarios.js';
 import { wireInspect } from './inspect.js';
 import { mountAuth } from './supa.js';
+import { buildBasemapPicker, BASEMAPS } from './basemap.js';
+import { buildCoordBar, buildNorthArrow, buildScaleBar } from './controls.js';
 
 // PMTiles serves every archive over HTTP range requests — one file per layer,
 // no tile server. Register the protocol before any source is added.
@@ -17,7 +19,8 @@ const basemapKey = params.get('basemap') || CONFIG.defaultBasemap;
 
 const map = new maplibregl.Map({
   container: 'map',
-  style: CONFIG.basemaps[basemapKey]?.url || CONFIG.basemaps[CONFIG.defaultBasemap].url,
+  style: (BASEMAPS.find(b => b.id === basemapKey) ||
+          BASEMAPS.find(b => b.id === CONFIG.defaultBasemap)).style,
   center: params.has('c') ? params.get('c').split(',').map(Number) : CONFIG.center,
   zoom: params.has('z') ? +params.get('z') : CONFIG.zoom,
   minZoom: CONFIG.minZoom,
@@ -42,9 +45,9 @@ map.on('error', e => {
   }
 });
 
-map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
-map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-right');
-map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: true }), 'bottom-right');
+// The scale, north arrow, geolocation and coordinate readout are all built by
+// hand in controls.js, so MapLibre's own versions would only duplicate them.
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
 window.__map = map;   // tests reach in here
 
@@ -62,10 +65,15 @@ wireChrome();
     reg = await loadRegistry();
   } catch (err) {
     console.error(err);
-    toast('Could not load the layer registry.');
+    toast('Could not load the layer registry. Run `npm run index` if you are serving locally.');
     return;
   }
   window.__registry = reg;
+
+  buildCoordBar(map);
+  buildNorthArrow(map);
+  buildScaleBar(map);
+  buildBasemapPicker(map, lm, basemapKey);
 
   const scen = buildScenarios(reg, lm);
   buildPanel(reg, lm, () => scen.render());
@@ -80,10 +88,12 @@ wireChrome();
   const wanted = (params.get('on') || '').split(',').filter(Boolean);
   for (const id of wanted) {
     const L = reg.byId.get(id);
-    if (L) await lm.add(L); else console.warn('unknown layer in ?on=', id);
+    if (!L) { console.warn('unknown layer in ?on=', id); continue; }
+    if (!L.drawable) { console.warn(`${id} is ${L.status} — skipped`); continue; }
+    await lm.add(L);
   }
   if (!wanted.length) {
-    for (const L of reg.layers.filter(l => l.default)) await lm.add(L);
+    for (const L of reg.layers.filter(l => l.default && l.drawable)) await lm.add(L);
   }
 
   // Keep the URL shareable without spamming history.

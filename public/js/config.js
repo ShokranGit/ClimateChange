@@ -8,12 +8,9 @@ export const CONFIG = {
   // NY + NJ, generously padded. NY: -79.76..-71.85 / 40.49..45.02
   //                             NJ: -75.56..-73.89 / 38.93..41.36
   maxBounds: [[-80.6, 38.3], [-71.0, 45.6]],
-  basemaps: {
-    muted:  { label: 'Muted',    url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
-    dark:   { label: 'Dark',     url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
-    detail: { label: 'Detailed', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' }
-  },
-  defaultBasemap: 'dark',
+  // The catalogue of basemaps lives in basemap.js, next to the picker that
+  // draws it. This is only which one opens first.
+  defaultBasemap: 'night',
   registry: '/layers/index.json',
   supabase: {
     url: window.__SUPABASE_URL__ || '',
