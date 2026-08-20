@@ -350,6 +350,35 @@ test('a layer switched on mid style-swap still draws', async () => {
   assert.deepEqual(out.drawn.sort(), ['evac-zones:fill', 'evac-zones:line']);
 });
 
+test('a layer draws even while the base map tiles never arrive', async () => {
+  // isStyleLoaded() also waits for every source's tiles. A background tab gets
+  // no frames, so it requests no tiles and that never becomes true — waiting on
+  // it would hang the whole restore. Only the style *definition* matters here.
+  const out = await page.evaluate(async () => {
+    for (const id of [...window.__lm.on.keys()]) window.__lm.remove(id);
+    window.__lm.errors.length = 0;
+    window.__map.setStyle({
+      version: 8, name: 'stalled',
+      sources: { stalled: { type: 'raster', tiles: ['http://127.0.0.1:9/{z}/{x}/{y}.png'], tileSize: 256 } },
+      layers: [
+        { id: 'bg3', type: 'background', paint: { 'background-color': '#111' } },
+        { id: 'stalled', type: 'raster', source: 'stalled' }
+      ],
+      glyphs: 'http://127.0.0.1/{fontstack}/{range}.pbf'
+    }, { diff: false });
+    await window.__lm.add(window.__registry.byId.get('evac-zones'));
+    return {
+      on: [...window.__lm.on.keys()],
+      styleLoaded: window.__map.isStyleLoaded(),
+      drawn: window.__map.getStyle().layers.map(l => l.id).filter(i => i.startsWith('evac-zones:')),
+      errors: window.__lm.errors.slice()
+    };
+  });
+  assert.deepEqual(out.errors, [], `maplibre errors: ${out.errors.join(' | ')}`);
+  assert.ok(out.on.includes('evac-zones'), 'the layer should be on despite the stalled base map');
+  assert.deepEqual(out.drawn.sort(), ['evac-zones:fill', 'evac-zones:line']);
+});
+
 test('no page errors and no silent MapLibre layer failures', async () => {
   const mapErrors = await page.evaluate(() => window.__lm.errors);
   const real = errors.filter(e => !/favicon|manifest|Failed to load resource.*404/i.test(e))

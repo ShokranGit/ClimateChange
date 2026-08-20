@@ -35,21 +35,26 @@ export function idle(map, timeoutMs = 8000) {
   });
 }
 
+// True once the style *definition* is parsed — which is all map.addSource and
+// map.addLayer require. Deliberately not isStyleLoaded(): that also waits for
+// every source's tiles, and a background tab gets no frames, so it requests no
+// tiles and the answer stays false forever. MapLibre is pinned (with an SRI
+// hash) so reading _loaded is safe; isStyleLoaded is the fallback if it moves.
+export function styleAccepting(map) {
+  const s = map.style;
+  return s && typeof s._loaded === 'boolean' ? s._loaded : map.isStyleLoaded();
+}
+
 // Resolves once the style is usable. MapLibre only fires `load` after its first
 // render, and a background tab gets no animation frames — so a tab opened in the
 // background would sit forever with an empty panel if initialisation waited on
 // `load`. Anything that does not touch the style should not wait at all.
 export function whenStyleReady(map, timeoutMs = 30000) {
-  if (map.isStyleLoaded()) return Promise.resolve(true);
+  if (styleAccepting(map)) return Promise.resolve(true);
   return new Promise(resolve => {
     let done = false;
-    // `load` is not the same as *usable*. It fires after the first render, but
-    // sprites, glyphs and sources can still be settling, and map.addSource then
-    // throws "Style is not done loading". Only isStyleLoaded() is the truth —
-    // and after setStyle some styles stop firing events before it flips, so
-    // poll as well as listen.
-    const check = () => { if (map.isStyleLoaded()) finish(true); };
-    const poll = setInterval(check, 120);
+    const check = () => { if (styleAccepting(map)) finish(true); };
+    const poll = setInterval(check, 100);
     const timer = setTimeout(() => finish(false), timeoutMs);
     function finish(ok) {
       if (done) return;

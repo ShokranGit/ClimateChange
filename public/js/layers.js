@@ -34,7 +34,7 @@ export class LayerManager {
     // still settling — and after a base map switch the new style needs a moment.
     // addSource throws "Style is not done loading" in that window, which read as
     // a layer that simply refused to appear.
-    if (!map.isStyleLoaded() && !await whenStyleReady(map, 15000)) {
+    if (!await whenStyleReady(map, 15000)) {
       const msg = `${entry.id}: the base map never finished loading`;
       this.errors.push(msg);
       console.error('[maplibre]', msg);
