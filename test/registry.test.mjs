@@ -55,6 +55,20 @@ test('generated index is non-empty and well formed', () => {
   }
 });
 
+test('layers that a single live query cannot fully return are flagged partial', () => {
+  // Otherwise a truncated FeatureCollection renders as if it were the whole
+  // layer, and a student reads a floodplain with most of it missing.
+  const CAP = 2000;
+  for (const L of idx.layers.filter(l => l.live && /arcgis/.test(l.url))) {
+    const declared = src.layers.find(s => s.id === L.id)?.features;
+    if (declared && declared <= CAP * 0.75) {
+      assert.equal(L.partial, undefined, `${L.id}: small layer should not be flagged`);
+    } else {
+      assert.equal(L.partial, CAP, `${L.id}: may exceed the query cap and must be flagged`);
+    }
+  }
+});
+
 test('scenario axes are internally consistent', () => {
   for (const L of src.layers.filter(l => l.scenarioSet)) {
     for (const a of L.scenarioSet.axes) {

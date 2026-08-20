@@ -88,7 +88,7 @@
       "scenarioNote": "This is the Ida layer — the pluvial one. Map Ida's deaths and basement flooding against the FEMA floodplain and there is almost no overlap. That is the finding, not an error: FEMA's product is coastal.",
       "tags": ["ida", "cloudburst", "pluvial", "rainfall"],
       "license": "not specified",
-      "source": { "type": "socrata", "domain": "data.cityofnewyork.us", "id": "9i7c-xyvv" }
+      "source": { "type": "socrata-zip", "domain": "data.cityofnewyork.us", "id": "9i7c-xyvv", "blob": "NYCFloodStormwaterFloodMaps.zip" }
     },
     {
       "id": "nyserda-slr", "label": "NYS Sea Level Rise & Future Floodplain Extent", "group": "future",

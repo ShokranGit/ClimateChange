@@ -28,7 +28,9 @@ const src = JSON.parse(fs.readFileSync(SRC, 'utf8'));
 // ArcGIS FeatureServer -> GeoJSON. `resultRecordCount` is capped server-side;
 // anything past the cap needs paging, which is the build script's job, not the
 // browser's. Layers over the cap are marked so we know to bake them.
-function arcgisUrl(s, limit = 2000) {
+const CAP = 2000;   // ArcGIS `maxRecordCount` on the services used here
+
+function arcgisUrl(s, limit = CAP) {
   const base = s.url.replace(/\/$/, '');
   const layer = s.layer ?? 0;
   const q = new URLSearchParams({
@@ -76,7 +78,14 @@ for (const L of src.layers) {
   }
 
   if (source?.type === 'arcgis') {
-    out.push({ ...pub, url: arcgisUrl(source), format: 'geojson', live: true });
+    // §3 lesson 1, in a new costume. An ArcGIS query stops at the server's
+    // transfer limit and says nothing: the response is a valid FeatureCollection
+    // that happens to be missing most of the data. In remote mode we cannot page,
+    // so any layer that might exceed the cap is flagged and shown as partial —
+    // baking it is what makes it whole.
+    const partial = !(L.features && L.features <= CAP * 0.75);
+    out.push({ ...pub, url: arcgisUrl(source), format: 'geojson', live: true,
+               ...(partial ? { partial: CAP } : {}) });
   } else if (source?.type === 'socrata' && !source.lat && !source.attachment) {
     out.push({ ...pub, url: socrataUrl(source), format: 'geojson', live: true });
   } else {
@@ -103,6 +112,7 @@ console.log(`wrote ${OUT}`);
 console.log(`  mode      ${registry.mode}`);
 console.log(`  live      ${out.filter(l => l.live).length}`);
 console.log(`  baked     ${out.filter(l => !l.live).length}`);
+console.log(`  partial   ${out.filter(l => l.partial).length}  (capped at ${CAP} features until baked)`);
 console.log(`  pending   ${skipped.length}`);
 for (const s of skipped) console.log(`    - ${s.id}: ${s.why}`);
 if (!out.length) { console.error('FAIL: registry has no layers'); process.exit(1); }

@@ -124,6 +124,8 @@ for (const L of src.layers) {
     else { results.push([L.id, `skipped (unhandled type ${s.type})`]); continue; }
 
     if (!feats.length) throw new Error('zero features returned');
+    if (L.features && feats.length < L.features * 0.9)
+      console.warn(`  ${L.id}: got ${feats.length}, registry expects ~${L.features}`);
     const fc = { type: 'FeatureCollection', features: feats };
     const file = `${OUT}/${L.id}.geojson`;
     fs.writeFileSync(file, JSON.stringify(fc));
@@ -140,5 +142,8 @@ for (const L of src.layers) {
 const w = Math.max(...results.map(r => r[0].length));
 for (const [id, msg] of results) console.log(`${id.padEnd(w)}  ${msg}`);
 const failed = results.filter(r => r[1].startsWith('FAILED'));
-console.log(`\n${results.length - failed.length}/${results.length} layers baked`);
-if (failed.length) process.exitCode = 1;
+const baked = results.filter(r => /^\d/.test(r[1]));
+console.log(`\n${baked.length} baked, ${failed.length} failed, ${results.length - baked.length - failed.length} skipped`);
+// A publisher having a bad afternoon must not throw away thirty good layers.
+// Only a total wipeout is a build failure.
+if (baked.length === 0) { console.error('nothing baked at all'); process.exitCode = 1; }

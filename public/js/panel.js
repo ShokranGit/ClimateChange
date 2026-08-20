@@ -53,6 +53,12 @@ function layerRow(L, lm, onScenarioChange) {
   if (L.gated)  badges.push(el('span', { class: 'badge gated', text: 'DEC — not re-served' }));
   if (L.stale)  badges.push(el('span', { class: 'badge stale', text: 'stale' }));
   if (L.scenarioSet) badges.push(el('span', { class: 'badge new', text: 'scenarios' }));
+  if (L.partial) badges.push(el('span', {
+    class: 'badge stale',
+    title: `Served live from the publisher, which caps a single query at ${L.partial} features. `
+         + 'Run the bake workflow to fetch the whole layer.',
+    text: `first ${fmt(L.partial)} only`
+  }));
 
   const meta = [L.agency, L.features ? `${fmt(L.features)} features` : null, L.vintage]
     .filter(Boolean).join(' · ');

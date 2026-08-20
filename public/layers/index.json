@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-08-19T22:50:17.064Z",
+  "generated": "2026-08-20T00:41:30.551Z",
   "mode": "remote",
   "groups": [
     {
@@ -94,7 +94,8 @@
       "license": "not specified",
       "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/S_FLD_HAZ_AR/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     },
     {
       "id": "firm-2007-effective",
@@ -116,51 +117,8 @@
       "license": "not specified",
       "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/2007_Effective_FIRMs/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
-    },
-    {
-      "id": "stormwater-flood",
-      "label": "NYC Stormwater Flood Maps",
-      "group": "pluvial",
-      "geom": "polygon",
-      "color": "#06d6a0",
-      "opacity": 0.5,
-      "state": "NY",
-      "agency": "DEP",
-      "vintage": "2024-07-03",
-      "scenarioSet": {
-        "axes": [
-          {
-            "id": "scenario",
-            "label": "Rainfall scenario",
-            "field": "scenario",
-            "values": [
-              "limited",
-              "moderate_current",
-              "moderate_2050",
-              "extreme_2080"
-            ],
-            "default": "moderate_current",
-            "display": {
-              "limited": "1.77 in/hr, current sea level",
-              "moderate_current": "2.13 in/hr, current sea level",
-              "moderate_2050": "2.13 in/hr + 2050s SLR",
-              "extreme_2080": "3.66 in/hr + 2080s SLR"
-            }
-          }
-        ]
-      },
-      "scenarioNote": "This is the Ida layer — the pluvial one. Map Ida's deaths and basement flooding against the FEMA floodplain and there is almost no overlap. That is the finding, not an error: FEMA's product is coastal.",
-      "tags": [
-        "ida",
-        "cloudburst",
-        "pluvial",
-        "rainfall"
-      ],
-      "license": "not specified",
-      "url": "https://data.cityofnewyork.us/resource/9i7c-xyvv.geojson?%24limit=50000",
-      "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     },
     {
       "id": "nyserda-slr",
@@ -231,7 +189,8 @@
       "license": "NONE STATED — verify before public re-serving",
       "url": "https://services7.arcgis.com/ZR2wjW0JGwgm9bhz/arcgis/rest/services/NYSERDA_Sea_Level_Rise_Viewer_2025_WFL1/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     },
     {
       "id": "slosh-inundation",
@@ -281,7 +240,8 @@
       "license": "not specified",
       "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/EJ_Areas/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     },
     {
       "id": "nys-dac",
@@ -421,7 +381,8 @@
       "license": "not specified",
       "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/WRP_Final/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     },
     {
       "id": "coastal-boundary",
@@ -436,7 +397,8 @@
       "license": "not specified",
       "url": "https://services2.arcgis.com/okXm0pb6aWH6XOGI/arcgis/rest/services/CoastalBoundary_Polyline_May2022/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     },
     {
       "id": "ny-rising",
@@ -456,7 +418,8 @@
       "license": "Copyright names GOSR",
       "url": "https://services2.arcgis.com/okXm0pb6aWH6XOGI/arcgis/rest/services/NYRising_CommunityPlanningBoundaries/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     },
     {
       "id": "sig-habitats",
@@ -582,7 +545,8 @@
       "license": "not specified",
       "url": "https://services.arcgis.com/at3rDjch5X7i9Bag/arcgis/rest/services/MS42020_Outfalls/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&resultRecordCount=2000&returnGeometry=true",
       "format": "geojson",
-      "live": true
+      "live": true,
+      "partial": 2000
     }
   ],
   "parked": [],
@@ -595,6 +559,10 @@
     {
       "id": "sandy-inundation",
       "why": "source type \"socrata\" needs a build step"
+    },
+    {
+      "id": "stormwater-flood",
+      "why": "source type \"socrata-zip\" needs a build step"
     },
     {
       "id": "redlining",
