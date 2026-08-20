@@ -35,6 +35,29 @@ export function idle(map, timeoutMs = 8000) {
   });
 }
 
+// Resolves once the style is usable. MapLibre only fires `load` after its first
+// render, and a background tab gets no animation frames — so a tab opened in the
+// background would sit forever with an empty panel if initialisation waited on
+// `load`. Anything that does not touch the style should not wait at all.
+export function whenStyleReady(map, timeoutMs = 30000) {
+  if (map.isStyleLoaded()) return Promise.resolve(true);
+  return new Promise(resolve => {
+    let done = false;
+    const finish = ok => {
+      if (done) return;
+      done = true;
+      map.off('load', onLoad);
+      map.off('styledata', onStyle);
+      resolve(ok);
+    };
+    const onLoad = () => finish(true);
+    const onStyle = () => { if (map.isStyleLoaded()) finish(true); };
+    map.on('load', onLoad);
+    map.on('styledata', onStyle);
+    setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
 export const fmt = n =>
   n == null ? '' : typeof n === 'number' ? n.toLocaleString('en-US') : String(n);
 

@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { $, toast } from './util.js';
+import { $, toast, whenStyleReady } from './util.js';
 import { loadRegistry } from './registry.js';
 import { LayerManager } from './layers.js';
 import { buildPanel, wireChrome } from './panel.js';
@@ -50,7 +50,10 @@ window.__map = map;   // tests reach in here
 
 wireChrome();
 
-map.on('load', async () => {
+// Everything that does not touch the map style is built immediately, so the
+// layer panel is usable before the first tile arrives — and still gets built in
+// a background tab, where MapLibre's `load` event never fires.
+(async () => {
   const lm = new LayerManager(map);
   window.__lm = lm;
 
@@ -71,6 +74,9 @@ map.on('load', async () => {
 
   // Layers named in ?on=a,b,c come up switched on — this is how a syllabus
   // links to a specific comparison.
+  // Only the parts that add sources and layers wait for the style.
+  await whenStyleReady(map);
+
   const wanted = (params.get('on') || '').split(',').filter(Boolean);
   for (const id of wanted) {
     const L = reg.byId.get(id);
@@ -98,7 +104,7 @@ map.on('load', async () => {
   map.on('moveend', sync);
   map.on('layerschange', sync);
   map.fire('layerschange');
-});
+})();
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

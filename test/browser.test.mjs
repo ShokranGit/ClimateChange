@@ -145,6 +145,34 @@ test('the scenario chooser appears only when a scenario layer is on', async () =
   assert.equal(await hidden(), true, 'the empty-state note should retire once a scenario layer is on');
 });
 
+// Regression: the first deploy built the whole UI inside map.on('load'), which
+// MapLibre only fires after its first render. A tab opened in the background
+// gets no animation frames, so the panel stayed empty until the tab was focused.
+test('the layer panel builds even when the map style never loads', async () => {
+  const p2 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await p2.route(/cdn\.jsdelivr\.net/, r => {
+    const name = {
+      'maplibre-gl.js': 'maplibre-gl-5.24.0.js', 'maplibre-gl.css': 'maplibre-gl-5.24.0.css',
+      'pmtiles.js': 'pmtiles-4.5.0.js', 'supabase.js': 'supabase-js-2.112.3.js'
+    }[r.request().url().split('/').pop()];
+    r.fulfill({ status: 200,
+      contentType: name.endsWith('.css') ? 'text/css' : 'text/javascript',
+      body: fs.readFileSync(`public/vendor/${name}`, 'utf8') });
+  });
+  // Never answer the basemap request at all — the map can never finish loading.
+  await p2.route(/basemaps\.cartocdn\.com/, () => {});
+  await p2.goto(`http://127.0.0.1:${PORT}/`);
+  await p2.waitForFunction(() => document.querySelectorAll('#layer-groups .layer').length > 0,
+    null, { timeout: 15000 });
+  const state = await p2.evaluate(() => ({
+    rows: document.querySelectorAll('#layer-groups .layer').length,
+    mapLoaded: window.__map.loaded()
+  }));
+  assert.ok(state.rows >= 25, `panel showed ${state.rows} layers`);
+  assert.equal(state.mapLoaded, false, 'the map should still be unloaded — that is the point');
+  await p2.close();
+});
+
 test('no page errors and no silent MapLibre layer failures', async () => {
   const mapErrors = await page.evaluate(() => window.__lm.errors);
   const real = errors.filter(e => !/favicon|manifest|Failed to load resource.*404/i.test(e));
