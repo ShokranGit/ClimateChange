@@ -50,7 +50,16 @@ function rasterStyle(tiles, attribution, labels) {
 // student had switched on has to be put back once the new style settles.
 // Forgetting this is the classic basemap-switch bug: the picker works, and all
 // the data silently disappears.
-export async function setBasemap(map, lm, bm) {
+// Switching is serialised. A student clicking two base maps in quick succession
+// used to have the second setStyle land in the middle of the first one putting
+// its layers back, and MapLibre then refused them as duplicates.
+let queue = Promise.resolve();
+export function setBasemap(map, lm, bm) {
+  queue = queue.catch(() => {}).then(() => applyBasemap(map, lm, bm));
+  return queue;
+}
+
+async function applyBasemap(map, lm, bm) {
   const active = lm.activeEntries();
   const restore = new Promise(res => map.once('styledata', res));
   map.setStyle(bm.style, { diff: false });

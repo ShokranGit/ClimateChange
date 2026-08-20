@@ -1,6 +1,6 @@
 // Bump VERSION on EVERY deploy. A stale shell against a new registry is the
 // single most confusing failure mode this app has.
-const VERSION = 'cc-2026-08-20-008';
+const VERSION = 'cc-2026-08-20-009';
 
 // The three libraries are pinned CDN copies with subresource-integrity hashes
 // computed from the exact npm tarballs, so the browser refuses a substituted

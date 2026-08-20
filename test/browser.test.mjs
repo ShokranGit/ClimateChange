@@ -379,6 +379,52 @@ test('a layer draws even while the base map tiles never arrive', async () => {
   assert.deepEqual(out.drawn.sort(), ['evac-zones:fill', 'evac-zones:line']);
 });
 
+test('the checkboxes follow the manager, not the other way round', async () => {
+  // ?on= layers, scenario presets and base map restores all switch layers on
+  // without a click. A panel that only remembers what was ticked shows nothing.
+  const out = await page.evaluate(async () => {
+    for (const id of [...window.__lm.on.keys()]) window.__lm.remove(id);
+    window.__map.fire('layerschange');
+    const box = () => document.querySelector('#layer-groups input[data-layer-id="evac-zones"]');
+    const before = box().checked;
+    await window.__lm.add(window.__registry.byId.get('evac-zones'));
+    const after = box().checked;
+    window.__lm.remove('evac-zones');
+    window.__map.fire('layerschange');
+    return { before, after, off: box().checked };
+  });
+  assert.equal(out.before, false);
+  assert.equal(out.after, true, 'the box should tick itself when the layer goes on');
+  assert.equal(out.off, false, 'and untick itself when it goes off');
+});
+
+test('two quick base map clicks do not fight over the same layers', async () => {
+  // Make the style fetch slow enough that the second click genuinely lands
+  // while the first switch is still putting the layers back.
+  await page.route(/basemaps\.cartocdn\.com/, async r => {
+    await new Promise(res => setTimeout(res, 700));
+    await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(BLANK_STYLE) });
+  });
+  const out = await page.evaluate(async () => {
+    for (const id of [...window.__lm.on.keys()]) window.__lm.remove(id);
+    await window.__lm.add(window.__registry.byId.get('evac-zones'));
+    window.__lm.errors.length = 0;
+    const opts = [...document.querySelectorAll('.basemap-opt')];
+    const hit = n => opts.find(o => new RegExp(n).test(o.textContent)).click();
+    hit('Muted');
+    hit('Detailed');          // second click lands mid-restore
+    await new Promise(r => setTimeout(r, 6000));
+    return {
+      on: [...window.__lm.on.keys()],
+      drawn: window.__map.getStyle().layers.map(l => l.id).filter(i => i.startsWith('evac-zones:')),
+      errors: window.__lm.errors.slice()
+    };
+  });
+  assert.deepEqual(out.errors, [], `maplibre errors: ${out.errors.join(' | ')}`);
+  assert.deepEqual(out.drawn.sort(), ['evac-zones:fill', 'evac-zones:line']);
+  assert.ok(out.on.includes('evac-zones'));
+});
+
 test('no page errors and no silent MapLibre layer failures', async () => {
   const mapErrors = await page.evaluate(() => window.__lm.errors);
   const real = errors.filter(e => !/favicon|manifest|Failed to load resource.*404/i.test(e))

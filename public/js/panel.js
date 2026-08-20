@@ -104,10 +104,20 @@ export function buildPanel(reg, lm, onScenarioChange) {
   };
 
   search.addEventListener('input', () => render(search.value));
-  lm.map.on('layerschange', refreshCount);
+  // A layer can go on or off without its checkbox being the cause: ?on= in the
+  // URL, a scenario preset, a base map switch putting layers back. The panel
+  // has to follow the manager rather than remember what was ticked.
+  const syncChecks = () => {
+    for (const cb of document.querySelectorAll('#layer-groups input[type=checkbox][data-layer-id]')) {
+      const on = lm.isOn(cb.dataset.layerId);
+      if (cb.checked !== on) cb.checked = on;
+    }
+  };
+  lm.map.on('layerschange', () => { refreshCount(); syncChecks(); });
   renderChips();
   render();
   refreshCount();
+  syncChecks();
   return { render: () => render(search.value) };
 }
 
@@ -142,6 +152,7 @@ function layerRow(L, lm, onScenarioChange) {
   }
 
   const cb = el('input', { type: 'checkbox', checked: lm.isOn(L.id) });
+  cb.dataset.layerId = L.id;
   cb.addEventListener('change', async () => {
     cb.disabled = true;
     await lm.toggle(L, cb.checked);
