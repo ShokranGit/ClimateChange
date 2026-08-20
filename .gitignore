@@ -13,3 +13,6 @@ public/vendor/
 public/layers/index.json
 __pycache__/
 *.pyc
+
+# Generated at build time by scripts/gen-index.mjs (see the vercel-build script).
+public/layers/index.json
