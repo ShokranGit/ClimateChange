@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d1b2a">
+<title>Flooding, Climate and the Waterfront — NY / NJ</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css"
+      integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
+<link rel="stylesheet" href="/app.css">
+<link rel="manifest" href="/manifest.webmanifest">
+</head>
+<body>
+<div id="map" aria-label="Map of flooding and climate layers across New York and New Jersey"></div>
+
+<button id="panel-toggle" class="fab" aria-expanded="false" aria-controls="panel" title="Layers">
+  <span aria-hidden="true">☰</span><span class="sr-only">Layers</span>
+</button>
+
+<aside id="panel" class="panel" hidden>
+  <header class="panel-head">
+    <h1>Flooding, Climate<br>&amp; the Waterfront</h1>
+    <p class="sub">New York &amp; New Jersey</p>
+    <button id="panel-close" class="icon-btn" title="Close">✕</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true"  data-tab="layers">Layers</button>
+    <button role="tab" aria-selected="false" data-tab="scenarios">Scenarios</button>
+    <button role="tab" aria-selected="false" data-tab="course">Course</button>
+  </nav>
+
+  <section id="tab-layers" class="tab-body" role="tabpanel">
+    <input id="layer-search" type="search" placeholder="Search layers, agencies, themes…" autocomplete="off">
+    <div id="layer-groups"></div>
+  </section>
+
+  <section id="tab-scenarios" class="tab-body" role="tabpanel" hidden>
+    <div id="scenario-empty" class="note">Turn on a scenario layer — the NYSERDA sea-level-rise floodplains, or the DEP stormwater flood maps — and its controls appear here.</div>
+    <div id="scenario-controls"></div>
+  </section>
+
+  <section id="tab-course" class="tab-body" role="tabpanel" hidden>
+    <div id="auth"></div>
+  </section>
+
+  <footer class="panel-foot">
+    <span id="layer-count"></span>
+    <a href="/about.html">About &amp; sources</a>
+  </footer>
+</aside>
+
+<div id="inspect" class="inspect" hidden></div>
+<div id="legend" class="legend" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="/js/env.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js"
+        integrity="sha384-qafw21c/iciq0VXsi9FzkfoQv5I/V0iqE4lSNcKXPnW9/UTJLnv5CcN4FHxVLnKg" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"
+        integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.5.0/dist/pmtiles.js"
+        integrity="sha384-pbKNZbDshUsLnZMIVsn/t+j3xEY9PGfuX5Z22l5rcy/obXz3EwaMx1F5d9sRsJMn" crossorigin="anonymous"></script>
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>

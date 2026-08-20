@@ -1,0 +1,20 @@
+{
+  "name": "climatechange",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Flooding, climate and the waterfront \u2014 a collective mapping platform for New York and New Jersey",
+  "scripts": {
+    "index": "node scripts/gen-index.mjs",
+    "index:baked": "node scripts/gen-index.mjs --baked",
+    "bake": "node scripts/bake-layers.mjs",
+    "serve": "node scripts/serve.mjs",
+    "test": "node --test \"test/*.test.mjs\"",
+    "vercel-build": "node scripts/write-env.mjs && node scripts/gen-index.mjs --baked",
+    "vendor": "node scripts/fetch-vendor.mjs",
+    "pretest": "node scripts/fetch-vendor.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}

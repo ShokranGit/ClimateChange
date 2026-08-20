@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About &amp; sources — Flooding, Climate and the Waterfront</title>
+<link rel="stylesheet" href="/app.css">
+<style>
+  body{overflow:auto}
+  main{max-width:760px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:26px;line-height:1.2;margin:0 0 6px}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin:36px 0 10px}
+  p,li{color:#cfe0e8;font-size:14.5px;line-height:1.62}
+  a{color:var(--accent)}
+  .lede{font-size:16.5px;color:var(--ink)}
+  ul{padding-left:20px}
+  hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+  code{background:#0b1620;padding:1px 5px;border-radius:4px;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <p><a href="/">← back to the map</a></p>
+  <h1>Flooding, Climate and the Waterfront</h1>
+  <p class="sub" style="color:var(--ink-dim);text-transform:uppercase;letter-spacing:.09em;font-size:12px">New York &amp; New Jersey · CUNY Graduate Center</p>
+
+  <p class="lede">A teaching platform for a course on flooding, climate change and the
+  urban waterfront. It puts the city's own maps of its water beside each other and
+  asks which of them a person standing on a given block would recognise.</p>
+
+  <h2>The exercise this site exists for</h2>
+  <p>New York City has had two simultaneously-operative, mutually inconsistent
+  regulatory floodplains for over a decade. FEMA issued Preliminary FIRMs in
+  December 2013; the version embedded in the Building Code is dated 2015. The City
+  filed a technical appeal. On 17 October 2016 FEMA agreed that its models had
+  overstated flood elevations by one to two and a half feet citywide, and
+  committed to reissue. No revised maps have been adopted.</p>
+  <p>So today flood insurance rates run off the <strong>2007 Effective FIRMs</strong>,
+  while the Building Code requires new and substantially improved buildings to use
+  the <strong>2015 Preliminary FIRMs</strong>. Turn both on. Then put the
+  <strong>Sandy Inundation Zone</strong> — where the water actually went — on top.</p>
+  <p>Second: map Ida's basement flooding against the FEMA floodplain. There is
+  almost no overlap, because FEMA's product is coastal and Ida was pluvial. That
+  is the finding, not an error. The layer that does capture it is DEP's
+  <strong>Stormwater Flood Maps</strong>.</p>
+
+  <h2>What is missing, and why that matters</h2>
+  <p>Several of these gaps were searched for and confirmed absent. They are not
+  search failures; they are the most teachable material here.</p>
+  <ul>
+    <li>There is <strong>no City dataset of piers, wharves, bulkheads, seawalls,
+      revetments or riprap</strong>. For roughly 520 miles of shoreline, the
+      structures holding the edge in place are absent from the municipal commons.
+      Everything usable comes from the navy's chartmakers — the NOAA ENC layers
+      on this map.</li>
+    <li>The 2021 <strong>Comprehensive Waterfront Plan shipped no GIS</strong>: a
+      155 MB PDF and six topic PDFs.</li>
+    <li>There is <strong>no official geometry for any coastal protection
+      project</strong>. Living Breakwaters is a completed $111M structure in the
+      harbour with no published alignment.</li>
+    <li>The Staten Island Sandy <strong>buyout footprints</strong> — Oakwood
+      Beach, Ocean Breeze, Graham Beach — are not published as state GIS.</li>
+    <li>DEP publishes <strong>98,288 harbour water-quality measurements with no
+      coordinates</strong>. A century-old sampling programme whose measurements
+      are public and whose places are not.</li>
+    <li>Neither the MTA nor the Port Authority publishes any flood or resilience
+      geodata.</li>
+  </ul>
+
+  <h2>Licensing, and an inversion worth teaching</h2>
+  <ul>
+    <li><strong>Federal is clean.</strong> NOAA and USACE state no access
+      constraints. USGS 3DEP is "free of charge and without use restrictions".</li>
+    <li><strong>The City states no licence at all</strong> on most of these
+      layers — only NYC.gov's general no-warranty terms apply.</li>
+    <li><strong>NYSDEC is the one real constraint.</strong> Its layers carry
+      "Secondary Distribution of the data is not allowed" plus a credit
+      requirement. Six layers here are affected. They are built and marked
+      <em>DEC — not re-served</em>: usable in class, held back from public
+      re-serving until DEC's position is in writing.</li>
+    <li><strong>NYSERDA's sea-level-rise data states no licence anywhere.</strong></li>
+    <li>And the lesson: the only explicit licence found across the whole survey is
+      <strong>NYC Ferry's, and it is the most restrictive</strong> — revocable,
+      non-transferable, non-assignable. The federal navy-chart data is freer than
+      the city's ferry timetable.</li>
+  </ul>
+
+  <h2>Caveats that belong in the seminar, not the footnotes</h2>
+  <ul>
+    <li><strong>311 measures reporting, not flooding.</strong> Differential
+      propensity to call — by tenure, immigration status, language, and prior
+      experience of non-response — is the classic confound. It is exactly what
+      ethnography can address and the API cannot.</li>
+    <li>The City's published <strong>future floodplains</strong> (2020s, 2050s,
+      2080s, 2100) are built on the 2015 Preliminary FIRMs the City successfully
+      appealed, so they overstate depth by 1–2.5 ft. They remain the City's
+      published future floodplains regardless.</li>
+    <li>Vertical datum for flood work here is <strong>NAVD88</strong>. Do not mix
+      it with MLLW or MHHW without saying so.</li>
+    <li>Socrata's <code>updatedAt</code> is a metadata timestamp. Several flood
+      layers advertise 2026 while the geometry has not changed since 2013. Use
+      <code>rowsUpdatedAt</code>.</li>
+  </ul>
+
+  <h2>How it is built</h2>
+  <p>A static site: plain ES modules, MapLibre GL JS 5.24.0, and PMTiles for the
+  large layers, each a single archive served over HTTP range requests. Small
+  layers are fetched live from the publisher, so they are never staler than the
+  agency's own map. Supabase carries course membership under row-level security;
+  Vercel hosts it. Source at the repository linked from the course page.</p>
+
+  <hr>
+  <p style="color:var(--ink-dim);font-size:12.5px">Coverage: New York and New
+  Jersey, centred on New York City. New Jersey layers are being added — the
+  bi-state sources (FEMA NFHL, NOAA sea-level-rise, USACE channels, NOAA ENC)
+  already cover both.</p>
+</main>
+</body>
+</html>

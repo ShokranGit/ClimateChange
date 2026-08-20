@@ -1,0 +1,52 @@
+name: Bake layers
+
+# Fetches every public layer from its publisher, writes GeoJSON into
+# public/layers/, regenerates the registry in baked mode, and commits.
+# Runs weekly because several sources move: FloodNet refreshes fortnightly,
+# the NOAA ENC is rebuilt every Saturday night, DEC remediation parcels nightly.
+
+on:
+  workflow_dispatch:
+    inputs:
+      layers:
+        description: "Space-separated layer ids (blank = all)"
+        required: false
+        default: ""
+      include_gated:
+        description: "Include the six NYSDEC layers (do not publish these)"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "17 7 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+
+      - name: Fetch layers
+        env:
+          INCLUDE_GATED: ${{ inputs.include_gated && '1' || '0' }}
+        run: node scripts/bake-layers.mjs ${{ inputs.layers }}
+
+      - name: Regenerate registry
+        run: node scripts/gen-index.mjs --baked
+
+      - name: Report sizes
+        run: du -sh public/layers/* | sort -h
+
+      - name: Commit
+        run: |
+          git config user.name  "layer-bake"
+          git config user.email "actions@github.com"
+          git add public/layers
+          git diff --cached --quiet && echo "no change" && exit 0
+          git commit -m "chore(layers): bake $(date -u +%Y-%m-%d)"
+          git push
