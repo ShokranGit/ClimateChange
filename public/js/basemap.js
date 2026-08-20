@@ -1,4 +1,4 @@
-import { el, $, toast } from './util.js';
+import { el, $, toast, whenStyleReady } from './util.js';
 
 // Basemaps, in the order a student meets them. Each carries a one-line reason
 // to pick it — a list of names alone makes the choice arbitrary.
@@ -55,7 +55,9 @@ export async function setBasemap(map, lm, bm) {
   const restore = new Promise(res => map.once('styledata', res));
   map.setStyle(bm.style, { diff: false });
   await restore;
-  await new Promise(r => setTimeout(r, 60));
+  // styledata fires before the style is actually usable; adding a source in
+  // that window throws. Wait for the real thing rather than guessing at 60ms.
+  await whenStyleReady(map, 15000);
   for (const entry of active) {
     lm.on.delete(entry.id);          // the style took the layer with it
     await lm.add(entry);

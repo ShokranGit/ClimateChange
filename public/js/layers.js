@@ -1,5 +1,5 @@
 import { fillPaint, fillOutlinePaint, linePaint, circlePaint, PROBE_FILTER } from './paint.js';
-import { toast } from './util.js';
+import { toast, whenStyleReady } from './util.js';
 
 // Layer lifecycle. One registry entry can produce several MapLibre layers
 // (a polygon gets a fill and an outline), so we track them by registry id.
@@ -29,6 +29,18 @@ export class LayerManager {
     }
     const map = this.map;
     const sourceId = `src:${entry.id}`;
+
+    // A checkbox can be ticked, or a ?on= layer restored, while the style is
+    // still settling — and after a base map switch the new style needs a moment.
+    // addSource throws "Style is not done loading" in that window, which read as
+    // a layer that simply refused to appear.
+    if (!map.isStyleLoaded() && !await whenStyleReady(map, 15000)) {
+      const msg = `${entry.id}: the base map never finished loading`;
+      this.errors.push(msg);
+      console.error('[maplibre]', msg);
+      toast(`\u201c${entry.label}\u201d could not be added \u2014 the base map is still loading`);
+      return;
+    }
 
     if (!map.getSource(sourceId)) {
       if (entry.format === 'pmtiles') {

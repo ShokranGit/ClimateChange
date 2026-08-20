@@ -43,18 +43,26 @@ export function whenStyleReady(map, timeoutMs = 30000) {
   if (map.isStyleLoaded()) return Promise.resolve(true);
   return new Promise(resolve => {
     let done = false;
-    const finish = ok => {
+    // `load` is not the same as *usable*. It fires after the first render, but
+    // sprites, glyphs and sources can still be settling, and map.addSource then
+    // throws "Style is not done loading". Only isStyleLoaded() is the truth —
+    // and after setStyle some styles stop firing events before it flips, so
+    // poll as well as listen.
+    const check = () => { if (map.isStyleLoaded()) finish(true); };
+    const poll = setInterval(check, 120);
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    function finish(ok) {
       if (done) return;
       done = true;
-      map.off('load', onLoad);
-      map.off('styledata', onStyle);
+      clearInterval(poll);
+      clearTimeout(timer);
+      map.off('load', check);
+      map.off('styledata', check);
       resolve(ok);
-    };
-    const onLoad = () => finish(true);
-    const onStyle = () => { if (map.isStyleLoaded()) finish(true); };
-    map.on('load', onLoad);
-    map.on('styledata', onStyle);
-    setTimeout(() => finish(false), timeoutMs);
+    }
+    map.on('load', check);
+    map.on('styledata', check);
+    check();
   });
 }
 

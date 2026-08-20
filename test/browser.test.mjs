@@ -326,6 +326,30 @@ test('switching the base map keeps the layers that were switched on', async () =
   assert.deepEqual(after.errors, [], `maplibre errors on restore: ${after.errors.join(' | ')}`);
 });
 
+test('a layer switched on mid style-swap still draws', async () => {
+  // The window between setStyle and the style actually being usable is real:
+  // map.addSource throws "Style is not done loading" inside it, and a student
+  // ticking a box while the base map is still settling saw nothing appear.
+  const out = await page.evaluate(async () => {
+    for (const id of [...window.__lm.on.keys()]) window.__lm.remove(id);
+    window.__lm.errors.length = 0;
+    window.__map.setStyle({
+      version: 8, name: 'swap', sources: {},
+      layers: [{ id: 'bg2', type: 'background', paint: { 'background-color': '#111' } }],
+      glyphs: 'http://127.0.0.1/{fontstack}/{range}.pbf'
+    }, { diff: false });
+    await window.__lm.add(window.__registry.byId.get('evac-zones'));
+    return {
+      on: [...window.__lm.on.keys()],
+      drawn: window.__map.getStyle().layers.map(l => l.id).filter(i => i.startsWith('evac-zones:')),
+      errors: window.__lm.errors.slice()
+    };
+  });
+  assert.deepEqual(out.errors, [], `maplibre errors: ${out.errors.join(' | ')}`);
+  assert.ok(out.on.includes('evac-zones'), 'the layer should be on');
+  assert.deepEqual(out.drawn.sort(), ['evac-zones:fill', 'evac-zones:line']);
+});
+
 test('no page errors and no silent MapLibre layer failures', async () => {
   const mapErrors = await page.evaluate(() => window.__lm.errors);
   const real = errors.filter(e => !/favicon|manifest|Failed to load resource.*404/i.test(e))
